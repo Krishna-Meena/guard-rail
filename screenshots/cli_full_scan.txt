@@ -1,0 +1,130 @@
+
+┌───────────────────────────────────────────────────────────┐
+│  GuardRail  BFSI / FinTech Compliance & Security Scanner  │
+└───────────────────────────────────────────────────────────┘
+
+ Target              C:\Users\Stude\OneDrive\Documents\bobai\GuardRail\guardr… 
+ Rule set            BFSI/FinTech Core Rule Set v1.0  [9 rules]                
+ Min severity        INFO (all)                                                
+
+┌────────────────────────────── Impact Summary ───────────────────────────────┐
+│                                                                             │
+│   Findings by severity           2 CRITICAL  •  9 HIGH                      │
+│   Est. review time saved         ~2h 45m  (11 CRITICAL/HIGH x 15 min)       │
+│   Compliance coverage            Flags issues mapped to 2 compliance        │
+│                                  frameworks: PCI-DSS, RBI guidelines        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────
+ CRITICAL   2 findings
+
+  GR-BFSI-001  Hardcoded Credentials
+  Location: app.py:21
+  Match:    PASSWORD = "N0vaPay$DB#Prod"
+  Maps to:  PCI-DSS v4.0 Req 8.2.1, OWASP A07:2021 Identification and 
+Authentication Failures, CWE-798
+  A credential (password, API key, secret token, or private key) is hard-coded 
+directly in source code.
+
+  GR-BFSI-002  SQL Injection Risk
+  Location: db.py:41
+  Match:    "SELECT id, holder_name, balance, currency FROM accounts WHERE 
+holder_name = " +
+  Maps to:  OWASP A03:2021 Injection, PCI-DSS v4.0 Req 6.2.4, CWE-89
+  User-supplied or external data is concatenated directly into a SQL statement 
+without parameterisation.
+
+───────────────────────────────────────────────────────────────────────────────
+ HIGH   9 findings
+
+  GR-BFSI-007  Missing Rate-Limiting on Authentication Endpoints
+  Location: app.py:73
+  Match:    @app.route("/api/v1/login"
+  Maps to:  OWASP A07:2021 Identification and Authentication Failures, PCI-DSS 
+v4.0 Req 8.3.4, RBI IT Framework 5.3 (Access Control)
+  Authentication endpoints (login, OTP verification, password reset, token 
+issuance) are defined without any visible rate-limiting or account lockout 
+mechanism.
+
+  GR-BFSI-005  Missing Audit-Log on Sensitive Operations
+  Location: app.py:74
+  Match:    def login(
+  Maps to:  PCI-DSS v4.0 Req 10.2.1, RBI IT Framework 7 (Audit Trail), SEBI 
+CSCRF Annex B-3
+  Sensitive operations (fund transfers, PII access, authentication events, 
+credential changes) appear to be performed without an adjacent audit-log call.
+
+  GR-BFSI-004  Insecure Password Hashing (MD5 / SHA-1)
+  Location: app.py:83
+  Match:    hashlib.md5(
+  Maps to:  PCI-DSS v4.0 Req 8.3.1, OWASP A02:2021 Cryptographic Failures, NIST
+SP 800-131A Rev 2
+  MD5 and SHA-1 are cryptographically broken hash functions.
+
+  GR-BFSI-005  Missing Audit-Log on Sensitive Operations
+  Location: app.py:121
+  Match:    def transfer(
+  Maps to:  PCI-DSS v4.0 Req 10.2.1, RBI IT Framework 7 (Audit Trail), SEBI 
+CSCRF Annex B-3
+  Sensitive operations (fund transfers, PII access, authentication events, 
+credential changes) appear to be performed without an adjacent audit-log call.
+
+  GR-BFSI-005  Missing Audit-Log on Sensitive Operations
+  Location: app.py:159
+  Match:    def fund_transfer(
+  Maps to:  PCI-DSS v4.0 Req 10.2.1, RBI IT Framework 7 (Audit Trail), SEBI 
+CSCRF Annex B-3
+  Sensitive operations (fund transfers, PII access, authentication events, 
+credential changes) appear to be performed without an adjacent audit-log call.
+
+  GR-BFSI-003  Missing Input Validation on Financial Fields
+  Location: app.py:163
+  Match:    int(body.
+  Maps to:  OWASP A03:2021 Injection, PCI-DSS v4.0 Req 6.2.4, RBI IT Framework 
+6.2
+  Financial amounts, account numbers, or quantities read from user input or an 
+external API are used in calculations without first validating their type, 
+range, sign, and precision.
+
+  GR-BFSI-003  Missing Input Validation on Financial Fields
+  Location: app.py:164
+  Match:    int(body.
+  Maps to:  OWASP A03:2021 Injection, PCI-DSS v4.0 Req 6.2.4, RBI IT Framework 
+6.2
+  Financial amounts, account numbers, or quantities read from user input or an 
+external API are used in calculations without first validating their type, 
+range, sign, and precision.
+
+  GR-BFSI-003  Missing Input Validation on Financial Fields
+  Location: app.py:166
+  Match:    float(request.
+  Maps to:  OWASP A03:2021 Injection, PCI-DSS v4.0 Req 6.2.4, RBI IT Framework 
+6.2
+  Financial amounts, account numbers, or quantities read from user input or an 
+external API are used in calculations without first validating their type, 
+range, sign, and precision.
+
+  GR-BFSI-004  Insecure Password Hashing (MD5 / SHA-1)
+  Location: models.py:47
+  Match:    hashlib.md5(
+  Maps to:  PCI-DSS v4.0 Req 8.3.1, OWASP A02:2021 Cryptographic Failures, NIST
+SP 800-131A Rev 2
+  MD5 and SHA-1 are cryptographically broken hash functions.
+
+───────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────── Scan Failed ────────────────────────────────┐
+│                                                                             │
+│    Result                   FAIL  Critical or high-severity issues          │
+│                             require remediation.                            │
+│    Files scanned            4                                               │
+│    Total findings           11                                              │
+│    By severity              2 CRITICAL  9 HIGH                              │
+│    Est. time saved          ~2h 45m                                         │
+│    Compliance flags         Flags issues mapped to 2 compliance             │
+│                             frameworks: PCI-DSS, RBI guidelines             │
+│    Markdown report          guardrail-report.md                             │
+│    SARIF report             guardrail-report.sarif.json                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+

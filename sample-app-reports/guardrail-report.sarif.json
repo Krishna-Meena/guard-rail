@@ -1,0 +1,464 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "GuardRail",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/guardrail-core/guardrail",
+          "rules": [
+            {
+              "id": "GR-BFSI-001",
+              "name": "Hardcoded Credentials",
+              "shortDescription": {
+                "text": "Hardcoded Credentials"
+              },
+              "fullDescription": {
+                "text": "A credential (password, API key, secret token, or private key) is hard-coded directly in source code. If this repository is ever shared, committed to version control, or inspected by an insider, the secret is immediately exposed — no attack sophistication required. In BFSI environments this can lead to full account takeover, unauthorized fund transfers, and severe regulatory penalties under PCI-DSS and RBI IT Framework."
+              },
+              "help": {
+                "text": "1. Revoke the exposed credential immediately. 2. Move all secrets to an environment variable or a secrets manager\n   (AWS Secrets Manager, HashiCorp Vault, Azure Key Vault, or\n   GCP Secret Manager).\n3. Reference secrets at runtime via os.environ.get(\"SECRET_NAME\") or\n   the secrets-manager SDK — never interpolate them as string literals.\n4. Add a pre-commit hook (e.g. git-secrets, truffleHog, detect-secrets)\n   to prevent future accidental commits.",
+                "markdown": "**Remediation:**\n\n1. Revoke the exposed credential immediately. 2. Move all secrets to an environment variable or a secrets manager\n   (AWS Secrets Manager, HashiCorp Vault, Azure Key Vault, or\n   GCP Secret Manager).\n3. Reference secrets at runtime via os.environ.get(\"SECRET_NAME\") or\n   the secrets-manager SDK — never interpolate them as string literals.\n4. Add a pre-commit hook (e.g. git-secrets, truffleHog, detect-secrets)\n   to prevent future accidental commits."
+              },
+              "properties": {
+                "security-severity": "9.8",
+                "tags": [
+                  "PCI-DSS v4.0 Req 8.2.1",
+                  "OWASP A07:2021 Identification and Authentication Failures",
+                  "CWE-798"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
+            },
+            {
+              "id": "GR-BFSI-007",
+              "name": "Missing Rate-Limiting on Authentication Endpoints",
+              "shortDescription": {
+                "text": "Missing Rate-Limiting on Authentication Endpoints"
+              },
+              "fullDescription": {
+                "text": "Authentication endpoints (login, OTP verification, password reset, token issuance) are defined without any visible rate-limiting or account lockout mechanism. Without rate-limiting, an attacker can perform credential-stuffing or brute-force attacks at machine speed — testing millions of password combinations against customer accounts. PCI-DSS Req 8.3.4 mandates lockout after 10 failed attempts. A successful attack gives full account access and the ability to authorise fraudulent transactions."
+              },
+              "help": {
+                "text": "Apply rate-limiting at the framework or infrastructure level:\n\n  # Flask — flask-limiter\n  from flask_limiter import Limiter\n  limiter = Limiter(app, key_func=get_remote_address)\n\n  @app.route(\"/login\", methods=[\"POST\"])\n  @limiter.limit(\"5 per minute; 20 per hour\")\n  def login(): ...\n\n  # FastAPI — slowapi\n  from slowapi import Limiter\n  from slowapi.util import get_remote_address\n  limiter = Limiter(key_func=get_remote_address)\n\n  @router.post(\"/login\")\n  @limiter.limit(\"5/minute\")\n  async def login(request: Request): ...\n\nAdditionally implement:\n  - Progressive delays after N failed attempts\n  - Account lockout after 10 failures (PCI-DSS minimum)\n  - CAPTCHA after 3–5 failures\n  - Alerting / audit log on repeated failures from same IP",
+                "markdown": "**Remediation:**\n\nApply rate-limiting at the framework or infrastructure level:\n\n  # Flask — flask-limiter\n  from flask_limiter import Limiter\n  limiter = Limiter(app, key_func=get_remote_address)\n\n  @app.route(\"/login\", methods=[\"POST\"])\n  @limiter.limit(\"5 per minute; 20 per hour\")\n  def login(): ...\n\n  # FastAPI — slowapi\n  from slowapi import Limiter\n  from slowapi.util import get_remote_address\n  limiter = Limiter(key_func=get_remote_address)\n\n  @router.post(\"/login\")\n  @limiter.limit(\"5/minute\")\n  async def login(request: Request): ...\n\nAdditionally implement:\n  - Progressive delays after N failed attempts\n  - Account lockout after 10 failures (PCI-DSS minimum)\n  - CAPTCHA after 3–5 failures\n  - Alerting / audit log on repeated failures from same IP"
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "tags": [
+                  "OWASP A07:2021 Identification and Authentication Failures",
+                  "PCI-DSS v4.0 Req 8.3.4",
+                  "RBI IT Framework 5.3 (Access Control)",
+                  "CWE-307"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
+            },
+            {
+              "id": "GR-BFSI-005",
+              "name": "Missing Audit-Log on Sensitive Operations",
+              "shortDescription": {
+                "text": "Missing Audit-Log on Sensitive Operations"
+              },
+              "fullDescription": {
+                "text": "Sensitive operations (fund transfers, PII access, authentication events, credential changes) appear to be performed without an adjacent audit-log call. Comprehensive, tamper-evident audit trails are mandatory under PCI-DSS Req 10, RBI IT Framework Section 7, and SEBI CSCRF. Without them, fraud investigations are impossible, regulatory audits fail, and incident response is severely hampered."
+              },
+              "help": {
+                "text": "Every sensitive operation must emit a structured audit event before returning, even on failure:\n\n  import logging\n  import time\n\n  audit_logger = logging.getLogger(\"guardrail.audit\")\n\n  def transfer_funds(from_account: str, to_account: str, amount: Decimal) -> None:\n      audit_logger.info(\n          \"FUND_TRANSFER_INITIATED\",\n          extra={\n              \"event_type\": \"FUND_TRANSFER\",\n              \"from_account\": from_account,\n              \"to_account\": to_account,\n              \"amount\": str(amount),\n              \"user_id\": current_user.id,\n              \"timestamp\": time.time(),\n              \"ip_address\": request.remote_addr,\n          },\n      )\n      # ... business logic ...\n\nRoute audit logs to an append-only, off-system log store (SIEM, cloud logging) that application code cannot delete or modify.",
+                "markdown": "**Remediation:**\n\nEvery sensitive operation must emit a structured audit event before returning, even on failure:\n\n  import logging\n  import time\n\n  audit_logger = logging.getLogger(\"guardrail.audit\")\n\n  def transfer_funds(from_account: str, to_account: str, amount: Decimal) -> None:\n      audit_logger.info(\n          \"FUND_TRANSFER_INITIATED\",\n          extra={\n              \"event_type\": \"FUND_TRANSFER\",\n              \"from_account\": from_account,\n              \"to_account\": to_account,\n              \"amount\": str(amount),\n              \"user_id\": current_user.id,\n              \"timestamp\": time.time(),\n              \"ip_address\": request.remote_addr,\n          },\n      )\n      # ... business logic ...\n\nRoute audit logs to an append-only, off-system log store (SIEM, cloud logging) that application code cannot delete or modify."
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "tags": [
+                  "PCI-DSS v4.0 Req 10.2.1",
+                  "RBI IT Framework 7 (Audit Trail)",
+                  "SEBI CSCRF Annex B-3",
+                  "ISO 27001 A.12.4",
+                  "CWE-778"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://owasp.org/www-project-cheat-sheets/cheatsheets/Logging_Cheat_Sheet.html"
+            },
+            {
+              "id": "GR-BFSI-004",
+              "name": "Insecure Password Hashing (MD5 / SHA-1)",
+              "shortDescription": {
+                "text": "Insecure Password Hashing (MD5 / SHA-1)"
+              },
+              "fullDescription": {
+                "text": "MD5 and SHA-1 are cryptographically broken hash functions. Pre-computed rainbow tables and GPU-accelerated brute-force tools can reverse an MD5 or SHA-1 password hash in seconds to minutes. PCI-DSS v4.0 explicitly prohibits their use for credential storage. Using them in a BFSI application exposes every customer password if the database is breached, leading to account takeover, regulatory fines, and reputational damage."
+              },
+              "help": {
+                "text": "Use a modern, slow, memory-hard password hashing algorithm:\n\n  # Python — bcrypt (recommended)\n  import bcrypt\n  hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))\n  bcrypt.checkpw(password.encode(), hashed)\n\n  # Python — argon2-cffi (NIST-recommended post-2023)\n  from argon2 import PasswordHasher\n  ph = PasswordHasher()\n  hashed = ph.hash(password)\n  ph.verify(hashed, password)\n\nNever use MD5, SHA-1, or even SHA-256 without a slow KDF (key derivation function) for password storage. For non-password data integrity use SHA-256 or SHA-3 minimum.",
+                "markdown": "**Remediation:**\n\nUse a modern, slow, memory-hard password hashing algorithm:\n\n  # Python — bcrypt (recommended)\n  import bcrypt\n  hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))\n  bcrypt.checkpw(password.encode(), hashed)\n\n  # Python — argon2-cffi (NIST-recommended post-2023)\n  from argon2 import PasswordHasher\n  ph = PasswordHasher()\n  hashed = ph.hash(password)\n  ph.verify(hashed, password)\n\nNever use MD5, SHA-1, or even SHA-256 without a slow KDF (key derivation function) for password storage. For non-password data integrity use SHA-256 or SHA-3 minimum."
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "tags": [
+                  "PCI-DSS v4.0 Req 8.3.1",
+                  "OWASP A02:2021 Cryptographic Failures",
+                  "NIST SP 800-131A Rev 2",
+                  "CWE-916"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/"
+            },
+            {
+              "id": "GR-BFSI-003",
+              "name": "Missing Input Validation on Financial Fields",
+              "shortDescription": {
+                "text": "Missing Input Validation on Financial Fields"
+              },
+              "fullDescription": {
+                "text": "Financial amounts, account numbers, or quantities read from user input or an external API are used in calculations without first validating their type, range, sign, and precision. This can cause negative balance injection (transferring a negative amount to add funds), integer overflow in fee calculations, and floating-point rounding exploits — all of which have led to real financial losses and regulatory sanctions in production BFSI systems."
+              },
+              "help": {
+                "text": "Validate every financial field before use:\n\n  from decimal import Decimal, InvalidOperation\n\n  def parse_amount(raw: str) -> Decimal:\n      try:\n          value = Decimal(raw)\n      except InvalidOperation:\n          raise ValueError(\"Invalid amount format\")\n      if value <= 0:\n          raise ValueError(\"Amount must be positive\")\n      if value > MAX_TRANSFER_LIMIT:\n          raise ValueError(\"Amount exceeds transfer limit\")\n      # Enforce precision (e.g. max 2 decimal places for INR)\n      if value.as_tuple().exponent < -2:\n          raise ValueError(\"Amount has too many decimal places\")\n      return value\n\nUse Decimal (not float) for all monetary values to avoid floating-point rounding errors. Never accept negative amounts unless the business logic explicitly requires it.",
+                "markdown": "**Remediation:**\n\nValidate every financial field before use:\n\n  from decimal import Decimal, InvalidOperation\n\n  def parse_amount(raw: str) -> Decimal:\n      try:\n          value = Decimal(raw)\n      except InvalidOperation:\n          raise ValueError(\"Invalid amount format\")\n      if value <= 0:\n          raise ValueError(\"Amount must be positive\")\n      if value > MAX_TRANSFER_LIMIT:\n          raise ValueError(\"Amount exceeds transfer limit\")\n      # Enforce precision (e.g. max 2 decimal places for INR)\n      if value.as_tuple().exponent < -2:\n          raise ValueError(\"Amount has too many decimal places\")\n      return value\n\nUse Decimal (not float) for all monetary values to avoid floating-point rounding errors. Never accept negative amounts unless the business logic explicitly requires it."
+              },
+              "properties": {
+                "security-severity": "7.5",
+                "tags": [
+                  "OWASP A03:2021 Injection",
+                  "PCI-DSS v4.0 Req 6.2.4",
+                  "RBI IT Framework 6.2",
+                  "CWE-20"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/20.html"
+            },
+            {
+              "id": "GR-BFSI-002",
+              "name": "SQL Injection Risk",
+              "shortDescription": {
+                "text": "SQL Injection Risk"
+              },
+              "fullDescription": {
+                "text": "User-supplied or external data is concatenated directly into a SQL statement without parameterisation. An attacker can inject arbitrary SQL, extract the entire database (including account numbers, KYC data, and transaction history), modify balances, or drop tables. This is the most exploited vulnerability class in financial applications and results in mandatory breach disclosure under RBI and GDPR."
+              },
+              "help": {
+                "text": "Always use parameterised queries or a safe ORM:\n\n  # Bad\n  cursor.execute(\"SELECT * FROM accounts WHERE id = \" + user_id)\n\n  # Good (parameterised)\n  cursor.execute(\"SELECT * FROM accounts WHERE id = %s\", (user_id,))\n\n  # Good (SQLAlchemy ORM)\n  session.query(Account).filter(Account.id == user_id).first()\n\nIf raw SQL is required, use your database driver's parameter placeholder (e.g. %s for psycopg2, ? for sqlite3, :param for SQLAlchemy text()). Never use str.format(), f-strings, or % interpolation to build queries.",
+                "markdown": "**Remediation:**\n\nAlways use parameterised queries or a safe ORM:\n\n  # Bad\n  cursor.execute(\"SELECT * FROM accounts WHERE id = \" + user_id)\n\n  # Good (parameterised)\n  cursor.execute(\"SELECT * FROM accounts WHERE id = %s\", (user_id,))\n\n  # Good (SQLAlchemy ORM)\n  session.query(Account).filter(Account.id == user_id).first()\n\nIf raw SQL is required, use your database driver's parameter placeholder (e.g. %s for psycopg2, ? for sqlite3, :param for SQLAlchemy text()). Never use str.format(), f-strings, or % interpolation to build queries."
+              },
+              "properties": {
+                "security-severity": "9.8",
+                "tags": [
+                  "OWASP A03:2021 Injection",
+                  "PCI-DSS v4.0 Req 6.2.4",
+                  "CWE-89",
+                  "RBI IT Framework 6.2 (Application Security)"
+                ]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://owasp.org/Top10/A03_2021-Injection/"
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "startTimeUtc": "2026-09-27T11:12:46.014480+00:00",
+          "endTimeUtc": "2026-09-27T11:12:46.014480+00:00"
+        }
+      ],
+      "originalUriBaseIds": {
+        "%SRCROOT%": {
+          "uri": "./",
+          "description": {
+            "text": "Root of the scanned source tree."
+          }
+        }
+      },
+      "results": [
+        {
+          "ruleId": "GR-BFSI-001",
+          "level": "error",
+          "message": {
+            "text": "A credential (password, API key, secret token, or private key) is hard-coded directly in source code. If this repository is ever shared, committed to version control, or inspected by an insider, the secret is immediately exposed — no attack sophistication required. In BFSI environments this can lead to full account takeover, unauthorized fund transfers, and severe regulatory penalties under PCI-DSS and RBI IT Framework."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 21,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "PASSWORD = \"N0vaPay$DB#Prod\""
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-007",
+          "level": "error",
+          "message": {
+            "text": "Authentication endpoints (login, OTP verification, password reset, token issuance) are defined without any visible rate-limiting or account lockout mechanism. Without rate-limiting, an attacker can perform credential-stuffing or brute-force attacks at machine speed — testing millions of password combinations against customer accounts. PCI-DSS Req 8.3.4 mandates lockout after 10 failed attempts. A successful attack gives full account access and the ability to authorise fraudulent transactions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 73,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "@app.route(\"/api/v1/login\""
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-005",
+          "level": "error",
+          "message": {
+            "text": "Sensitive operations (fund transfers, PII access, authentication events, credential changes) appear to be performed without an adjacent audit-log call. Comprehensive, tamper-evident audit trails are mandatory under PCI-DSS Req 10, RBI IT Framework Section 7, and SEBI CSCRF. Without them, fraud investigations are impossible, regulatory audits fail, and incident response is severely hampered."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 74,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "def login("
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-004",
+          "level": "error",
+          "message": {
+            "text": "MD5 and SHA-1 are cryptographically broken hash functions. Pre-computed rainbow tables and GPU-accelerated brute-force tools can reverse an MD5 or SHA-1 password hash in seconds to minutes. PCI-DSS v4.0 explicitly prohibits their use for credential storage. Using them in a BFSI application exposes every customer password if the database is breached, leading to account takeover, regulatory fines, and reputational damage."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 83,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "hashlib.md5("
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-005",
+          "level": "error",
+          "message": {
+            "text": "Sensitive operations (fund transfers, PII access, authentication events, credential changes) appear to be performed without an adjacent audit-log call. Comprehensive, tamper-evident audit trails are mandatory under PCI-DSS Req 10, RBI IT Framework Section 7, and SEBI CSCRF. Without them, fraud investigations are impossible, regulatory audits fail, and incident response is severely hampered."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 121,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "def transfer("
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-005",
+          "level": "error",
+          "message": {
+            "text": "Sensitive operations (fund transfers, PII access, authentication events, credential changes) appear to be performed without an adjacent audit-log call. Comprehensive, tamper-evident audit trails are mandatory under PCI-DSS Req 10, RBI IT Framework Section 7, and SEBI CSCRF. Without them, fraud investigations are impossible, regulatory audits fail, and incident response is severely hampered."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 159,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "def fund_transfer("
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-003",
+          "level": "error",
+          "message": {
+            "text": "Financial amounts, account numbers, or quantities read from user input or an external API are used in calculations without first validating their type, range, sign, and precision. This can cause negative balance injection (transferring a negative amount to add funds), integer overflow in fee calculations, and floating-point rounding exploits — all of which have led to real financial losses and regulatory sanctions in production BFSI systems."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 163,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "int(body."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-003",
+          "level": "error",
+          "message": {
+            "text": "Financial amounts, account numbers, or quantities read from user input or an external API are used in calculations without first validating their type, range, sign, and precision. This can cause negative balance injection (transferring a negative amount to add funds), integer overflow in fee calculations, and floating-point rounding exploits — all of which have led to real financial losses and regulatory sanctions in production BFSI systems."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 164,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "int(body."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-003",
+          "level": "error",
+          "message": {
+            "text": "Financial amounts, account numbers, or quantities read from user input or an external API are used in calculations without first validating their type, range, sign, and precision. This can cause negative balance injection (transferring a negative amount to add funds), integer overflow in fee calculations, and floating-point rounding exploits — all of which have led to real financial losses and regulatory sanctions in production BFSI systems."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 166,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "float(request."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-002",
+          "level": "error",
+          "message": {
+            "text": "User-supplied or external data is concatenated directly into a SQL statement without parameterisation. An attacker can inject arbitrary SQL, extract the entire database (including account numbers, KYC data, and transaction history), modify balances, or drop tables. This is the most exploited vulnerability class in financial applications and results in mandatory breach disclosure under RBI and GDPR."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "db.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 41,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "\"SELECT id, holder_name, balance, currency FROM accounts WHERE holder_name = \" +"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "GR-BFSI-004",
+          "level": "error",
+          "message": {
+            "text": "MD5 and SHA-1 are cryptographically broken hash functions. Pre-computed rainbow tables and GPU-accelerated brute-force tools can reverse an MD5 or SHA-1 password hash in seconds to minutes. PCI-DSS v4.0 explicitly prohibits their use for credential storage. Using them in a BFSI application exposes every customer password if the database is breached, leading to account takeover, regulatory fines, and reputational damage."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "models.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 47,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "hashlib.md5("
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "ruleset": "BFSI/FinTech Core Rule Set",
+        "rulesetVersion": "1.0"
+      }
+    }
+  ]
+}
