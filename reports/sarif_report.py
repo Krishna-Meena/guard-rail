@@ -40,7 +40,7 @@ _SARIF_SECURITY_SEVERITY: dict[Severity, str] = {
 }
 
 _TOOL_NAME = "GuardRail"
-_TOOL_URI = "https://github.com/guardrail-core/guardrail"
+_TOOL_URI = "https://github.com/Krishna-Meena/guard-rail"
 _TOOL_VERSION = "0.1.0"
 
 

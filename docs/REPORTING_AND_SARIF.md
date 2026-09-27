@@ -116,7 +116,7 @@ The report conforms to [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.
         "driver": {
           "name": "GuardRail",
           "version": "0.1.0",
-          "informationUri": "https://github.com/your-org/guardrail",
+          "informationUri": "https://github.com/Krishna-Meena/guard-rail",
           "rules": [ ... ]
         }
       },
