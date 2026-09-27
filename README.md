@@ -2,7 +2,15 @@
 
 **BFSI / FinTech Compliance & Security Scanner**
 
+[![Live Demo](https://img.shields.io/badge/🛡️_Live_Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://guard-rail.streamlit.app)
+[![Tests](https://img.shields.io/badge/tests-120_passing-brightgreen?style=flat-square)](https://github.com/Krishna-Meena/guard-rail/actions)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://opensource.org/licenses/MIT)
+[![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-informational?style=flat-square)](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
+
 > Catch production-grade security and compliance violations in financial-services codebases before they reach production — in seconds, not sprints.
+
+**[▶ Try the Live Dashboard](https://guard-rail.streamlit.app)** · [Quick Start](QUICKSTART.md) · [Demo Script](DEMO_SCRIPT.md) · [Judge Q&A](JUDGE_QA.md)
 
 ---
 
@@ -286,8 +294,11 @@ Open `http://localhost:8501` in your browser.
 
 ## Streamlit Cloud Deployment
 
-The dashboard is ready for [Streamlit Community Cloud](https://share.streamlit.io/). When creating
-the app, select this repository and use these settings:
+The interactive dashboard is **live** on Streamlit Community Cloud:
+
+> **[🛡️ https://guard-rail.streamlit.app](https://guard-rail.streamlit.app)**
+
+To deploy your own instance, select this repository on [share.streamlit.io](https://share.streamlit.io/) with these settings:
 
 | Setting | Value |
 |---|---|
